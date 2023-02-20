@@ -35,3 +35,54 @@ current_holdings['country'][current_holdings['country'] == 'Taiwan Province of C
 
 #let's use full_join to combine them
 current_holdings_lat_lon <- full_join(current_holdings, country_lat_lon, by = c("country"="Country"))
+
+#let's create palette and text for leaflet
+mypalette <- colorBin(
+  palette ="viridis",
+  domain = current_holdings_lat_lon$tonnes,
+  na.color = "transparent", 
+  bins = 8
+)
+
+
+mytext <- paste(
+  "<b>Country:</b>", current_holdings_lat_lon$country, "<br />",
+  "<b>Metric Tonnes:</b>", current_holdings_lat_lon$tonnes, "<br/>") %>%
+  lapply(htmltools::HTML)
+
+#let's create leaflet
+leaflet_current_holdings <- leaflet(current_holdings_lat_lon) %>%
+  addTiles() %>%
+  setView(
+    lng = -8, lat = 38, zoom = 1
+  ) %>%
+  
+  addCircleMarkers(
+    ~ Longitude..generated., ~ Latitude..generated., 
+    fillColor = ~ mypalette(tonnes), 
+    fillOpacity = 0.6, 
+    color = "white", 
+    radius = 4, 
+    stroke = FALSE,
+    label = mytext,
+    labelOptions = labelOptions(
+      style = list( 
+        "font-weight" = "normal", 
+        padding = "3px 8px"
+      ), 
+      textsize = "13px", 
+      direction = "auto"
+    ) 
+  ) %>%
+  
+  addLegend( 
+    pal = mypalette, 
+    values = ~ tonnes, 
+    opacity = 0.9,
+    title = "Gold Holdings (Tonnes)", 
+    position = "bottomright"
+  )
+
+#save leaflet file
+library(htmlwidgets)
+saveWidget(leaflet_current_holdings, file="leaflet_current_holdings.html")
