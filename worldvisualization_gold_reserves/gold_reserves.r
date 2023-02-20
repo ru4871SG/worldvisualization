@@ -26,3 +26,12 @@ install.packages("rgdal")
 
 library(leaflet)
 library(rgdal)
+
+#I have csv file with lat and lon
+country_lat_lon <- read.csv("country_list_with_lat_and_lon.csv")
+
+#come on now...this is political. and country_lat_lon put it as "Taiwan" anyway
+current_holdings['country'][current_holdings['country'] == 'Taiwan Province of China'] <- 'Taiwan'
+
+#let's use full_join to combine them
+current_holdings_lat_lon <- full_join(current_holdings, country_lat_lon, by = c("country"="Country"))
