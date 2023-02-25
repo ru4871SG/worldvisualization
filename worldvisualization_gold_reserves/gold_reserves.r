@@ -20,69 +20,75 @@ current_holdings <- drop_na(current_holdings)
 #let's see if there's any trailing/leading whitespaces
 current_holdings$country <- gsub("^\\s+|\\s+$", "", current_holdings$country)
 
-#let's visualize it with leaflet
-install.packages("leaflet")
-install.packages("rgdal")
+#let's visualize it with leaflet, install packages as needed
+
+##install.packages("leaflet")
+##install.packages("rgdal")
+##install.packages("geojsonio")
 
 library(leaflet)
 library(rgdal)
+library(geojsonio)
 
-#I have csv file with lat and lon
-country_lat_lon <- read.csv("country_list_with_lat_and_lon.csv")
+#let's get world_geojson for our beautiful map
+world_geojson <- geojson_read("countries.geo.json", what = "sp")
 
-#come on now...this is political. and country_lat_lon put it as "Taiwan" anyway
-current_holdings['country'][current_holdings['country'] == 'Taiwan Province of China'] <- 'Taiwan'
+#looks like some country names are inconsistent, we need to change them
+current_holdings['country'][current_holdings['country'] == 'United States'] <- 'United States of America'
+current_holdings['country'][current_holdings['country'] == 'Belarus, Rep. of'] <- 'Belarus'
+current_holdings['country'][current_holdings['country'] == 'China, P.R.: Mainland'] <- 'China'
+current_holdings['country'][current_holdings['country'] == 'Croatia, Rep. of'] <- 'Croatia'
+current_holdings['country'][current_holdings['country'] == 'Czech Rep.'] <- 'Czech Republic'
+current_holdings['country'][current_holdings['country'] == 'Egypt, Arab Rep. of'] <- 'Egypt'
+current_holdings['country'][current_holdings['country'] == 'Russian Federation'] <- 'Russia'
+current_holdings['country'][current_holdings['country'] == 'Kazakhstan, Rep. of'] <- 'Kazakhstan'
+current_holdings['country'][current_holdings['country'] == 'Korea, Rep. of'] <- 'South Korea'
+current_holdings['country'][current_holdings['country'] == 'Kyrgyz Rep.'] <- 'Kyrgyzstan'
+current_holdings['country'][current_holdings['country'] == 'Mauritania, Islamic Rep. of'] <- 'Mauritania'
+current_holdings['country'][current_holdings['country'] == 'Mozambique, Rep. of'] <- 'Mozambique'
+current_holdings['country'][current_holdings['country'] == 'Netherlands, The'] <- 'Netherlands'
+current_holdings['country'][current_holdings['country'] == 'North Macedonia, Republic of'] <- 'Macedonia'
+current_holdings['country'][current_holdings['country'] == 'Poland, Rep. of'] <- 'Poland'
+current_holdings['country'][current_holdings['country'] == 'Serbia, Rep. of'] <- 'Republic of Serbia'
+current_holdings['country'][current_holdings['country'] == 'Slovenia, Rep. of'] <- 'Slovenia'
+current_holdings['country'][current_holdings['country'] == 'Syrian Arab Republic'] <- 'Syria'
+current_holdings['country'][current_holdings['country'] == 'Tajikistan, Rep. of'] <- 'Tajikistan'
+current_holdings['country'][current_holdings['country'] == 'Uzbekistan, Rep. of'] <- 'Uzbekistan'
+current_holdings['country'][current_holdings['country'] == 'Venezuela, Republica Bolivariana de'] <- 'Venezuela'
+current_holdings['country'][current_holdings['country'] == 'Yemen, Republic of'] <- 'Yemen'
 
-#let's use full_join to combine them
-current_holdings_lat_lon <- full_join(current_holdings, country_lat_lon, by = c("country"="Country"))
+#let's merge them to our world_geojson
+world_geojson <- sp::merge(world_geojson, current_holdings, by.x = "name", by.y = "country")
 
-#let's create palette and text for leaflet
-mypalette <- colorBin(
-  palette ="viridis",
-  domain = current_holdings_lat_lon$tonnes,
-  na.color = "transparent", 
-  bins = 8
-)
-
-
+#let's create text label for leaflet
 mytext <- paste(
-  "<b>Country:</b>", current_holdings_lat_lon$country, "<br />",
-  "<b>Metric Tonnes:</b>", current_holdings_lat_lon$tonnes, "<br/>") %>%
+  "<b>Country:</b>", world_geojson$name, "<br />",
+  "<b>Metric Tonnes:</b>", world_geojson$tonnes, "<br/>") %>%
   lapply(htmltools::HTML)
 
-#let's create leaflet
-leaflet_current_holdings <- leaflet(current_holdings_lat_lon) %>%
-  addTiles() %>%
-  setView(
-    lng = -8, lat = 38, zoom = 1
-  ) %>%
-  
-  addCircleMarkers(
-    ~ Longitude..generated., ~ Latitude..generated., 
-    fillColor = ~ mypalette(tonnes), 
-    fillOpacity = 0.6, 
-    color = "white", 
-    radius = 4, 
-    stroke = FALSE,
-    label = mytext,
-    labelOptions = labelOptions(
-      style = list( 
-        "font-weight" = "normal", 
-        padding = "3px 8px"
-      ), 
-      textsize = "13px", 
-      direction = "auto"
-    ) 
-  ) %>%
-  
-  addLegend( 
-    pal = mypalette, 
-    values = ~ tonnes, 
-    opacity = 0.9,
-    title = "Gold Holdings (Tonnes)", 
-    position = "bottomright"
-  )
+#let's create the palette for the legend
+mypalette <- colorNumeric(
+  palette = "YlGnBu",
+  domain = world_geojson$tonnes
+)
 
-#save leaflet file
-library(htmlwidgets)
-saveWidget(leaflet_current_holdings, file="leaflet_current_holdings.html")
+#let's create the map now using leaflet
+leaflet_current_holdings <- leaflet(world_geojson) %>%
+              setView(
+                lng = 20, lat = 38, zoom = 2 
+              ) %>%
+              addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+                          opacity = 1.0, fillOpacity = 0.5,
+                          fillColor = ~colorQuantile("YlGnBu", tonnes)(tonnes),
+                          label = mytext,
+                          highlightOptions = highlightOptions(color = "white", weight = 2,
+                                                              bringToFront = TRUE)) %>%
+              addLegend(
+                pal = mypalette,
+                values = ~tonnes,
+                position = "topright"
+              )
+
+#save leaflet file, if needed
+#library(htmlwidgets)
+#saveWidget(leaflet_current_holdings, file="leaflet_current_holdings.html")
