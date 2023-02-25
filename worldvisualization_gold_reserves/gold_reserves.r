@@ -31,6 +31,7 @@ library(rgdal)
 library(geojsonio)
 
 #let's get world_geojson for our beautiful map
+#data source: https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json , I saved it locally just in case the original file gets deleted. 
 world_geojson <- geojson_read("countries.geo.json", what = "sp")
 
 #looks like some country names are inconsistent, we need to change them
