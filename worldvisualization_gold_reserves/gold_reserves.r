@@ -75,7 +75,7 @@ mypalette <- colorNumeric(
 #let's create the map now using leaflet
 leaflet_current_holdings <- leaflet(world_geojson) %>%
               setView(
-                lng = 20, lat = 38, zoom = 2 
+                lng = 0, lat = 38, zoom = 2 
               ) %>%
               addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
                           opacity = 1.0, fillOpacity = 0.5,
