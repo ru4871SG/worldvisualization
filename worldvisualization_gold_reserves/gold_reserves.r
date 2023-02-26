@@ -67,29 +67,32 @@ mytext <- paste(
   "<b>Metric Tonnes:</b>", world_geojson$tonnes, "<br/>") %>%
   lapply(htmltools::HTML)
 
-#let's create the palette for the legend
-mypalette <- colorNumeric(
-  palette = "YlGnBu",
-  domain = world_geojson$tonnes
-)
+#let's create the palette for the legend. we use viridis for the consistency of the website
+library(viridis)
+
+viridis_colors <- viridis(100)
+mypalette <- colorBin(viridis_colors, world_geojson$tonnes, bins = 8, na.color = "grey")
 
 #let's create the map now using leaflet
 leaflet_current_holdings <- leaflet(world_geojson) %>%
-              setView(
-                lng = 0, lat = 38, zoom = 2 
+              setView(lng = 0, lat = 38, zoom = 2) %>%
+              addPolygons(
+                color = "#444444", weight = 1, smoothFactor = 0.5,
+                opacity = 1.0, fillOpacity = 0.5,
+                fillColor = ~mypalette(tonnes),
+                label = mytext,
+                highlightOptions = highlightOptions(
+                  color = "white", weight = 2, bringToFront = TRUE
+                )
               ) %>%
-              addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
-                          opacity = 1.0, fillOpacity = 0.5,
-                          fillColor = ~colorQuantile("YlGnBu", tonnes)(tonnes),
-                          label = mytext,
-                          highlightOptions = highlightOptions(color = "white", weight = 2,
-                                                              bringToFront = TRUE)) %>%
               addLegend(
                 pal = mypalette,
                 values = ~tonnes,
-                position = "topright"
+                position = "topright",
+                opacity = 0.8,
+                title = "in metric tonnes"
               )
 
 #save leaflet file, if needed
 #library(htmlwidgets)
-#saveWidget(leaflet_current_holdings, file="leaflet_current_holdings.html")
+#saveWidget(leaflet_current_holdings, file="gold_reserves_current_holdings.html")
